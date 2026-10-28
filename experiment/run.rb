@@ -38,7 +38,7 @@ COMPILERS = {
   'silkeh/clang:20-bullseye' => ['2025-03-04'],
   'silkeh/clang:21'        => ['2025-08-26'],
   'silkeh/clang:22'        => ['2026-02-24'],
-  'tuxmake/korg-clang-23:latest' => ['2026-08-25'],
+  'rhub/clang23' => ['2026-08-25'],
 }
 
 OPT_FLAGS = ["-O0", "-O1", "-O2", "-O3", "-Os", "-Oz", "-Ofast", "-O3 -march=native"]
