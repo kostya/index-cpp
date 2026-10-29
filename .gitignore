@@ -2,3 +2,4 @@ index
 *.o
 /experiment/py
 *.out
+.DS_Store

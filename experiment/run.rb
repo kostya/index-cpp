@@ -4,9 +4,6 @@ require 'open3'
 require "json"
 
 COMPILERS = {
-  # 'gcc:4.9'                => ['2014-04-22'],
-  # 'gcc:5'                  => ['2015-04-22'],
-  # 'gcc:6'                  => ['2016-04-27'],
   'gcc:7'                  => ['2017-05-02'],
   'gcc:8'                  => ['2018-05-02'],
   'gcc:9'                  => ['2019-05-03'],
@@ -18,27 +15,23 @@ COMPILERS = {
   'gcc:15'                 => ['2025-04-25'],
   'gcc:16'                 => ['2026-04-30'],
 
-  # 'kunitoki/clang-3'       => ['2016-09-01'],
-  # 'kunitoki/clang-4'       => ['2017-03-13'],
-  # 'kunitoki/clang-5'       => ['2017-09-07'],
-  # 'kunitoki/clang-6'       => ['2018-03-08'],
-  'kunitoki/clang-7'       => ['2018-09-19'],
-  'kunitoki/clang-8'       => ['2019-03-20'],
-  'kunitoki/clang-9'       => ['2019-09-19'],
-  'kunitoki/clang-10'      => ['2020-03-24'],
-  'silkeh/clang:11'        => ['2020-10-12'],
-  'silkeh/clang:12'        => ['2021-04-14'],
-  'silkeh/clang:13'        => ['2021-10-04'],
-  'silkeh/clang:14'        => ['2022-03-25'],
-  'silkeh/clang:15-bullseye' => ['2022-09-06'],
-  'silkeh/clang:16-bullseye' => ['2023-03-17'],
-  'silkeh/clang:17-bullseye' => ['2023-09-09'],
-  'silkeh/clang:18-bullseye' => ['2024-03-08'],
-  'silkeh/clang:19-bullseye' => ['2024-09-17'],
-  'silkeh/clang:20-bullseye' => ['2025-03-04'],
-  'silkeh/clang:21'        => ['2025-08-26'],
-  'silkeh/clang:22'        => ['2026-02-24'],
-  'rhub/clang23' => ['2026-08-25'],
+  'teeks99/clang-ubuntu:7'   => ['2018-09-19'],
+  'teeks99/clang-ubuntu:8'   => ['2019-03-20'],
+  'teeks99/clang-ubuntu:9'   => ['2019-09-19'],
+  'teeks99/clang-ubuntu:10'  => ['2020-03-24'],
+  'teeks99/clang-ubuntu:11'  => ['2020-10-12'],
+  'teeks99/clang-ubuntu:12'  => ['2021-04-14'],
+  'teeks99/clang-ubuntu:13'  => ['2021-10-04'],
+  'teeks99/clang-ubuntu:14'  => ['2022-03-25'],
+  'teeks99/clang-ubuntu:15'  => ['2022-09-06'],
+  'teeks99/clang-ubuntu:16'  => ['2023-03-17'],
+  'teeks99/clang-ubuntu:17'  => ['2023-09-19'],
+  'teeks99/clang-ubuntu:18'  => ['2024-03-06'],
+  'teeks99/clang-ubuntu:19'  => ['2024-09-17'],
+  'teeks99/clang-ubuntu:20'  => ['2025-03-04'],
+  'teeks99/clang-ubuntu:21'  => ['2025-08-26'],
+  'teeks99/clang-ubuntu:22'  => ['2026-02-24'],
+  'teeks99/clang-ubuntu:23'  => ['2026-08-25'],
 }
 
 OPT_FLAGS = ["-O0", "-O1", "-O2", "-O3", "-Os", "-Oz", "-Ofast", "-O3 -march=native"]
@@ -49,12 +42,13 @@ def clean_version(raw)
 
   s = raw.strip.lines.first.to_s.strip
 
-  if s =~ /gcc\s*\(.*?\)\s*([\d.]+)/i
-    "GCC #{$1}"
-  elsif s =~ /clang\s+version\s+([\d.]+)/i
-    "Clang #{$1}"
-  elsif s =~ /gcc\s+([\d.]+)/i
-    "GCC #{$1}"
+  case s
+  when /g\+\+.*?\(\s*GCC\s*\).*?([\d.]+)/i
+    "G++ #{$1}"
+  when /g\+\+\s+([\d.]+)/i
+    "G++ #{$1}"
+  when /clang(?:\+\+)?\s+version\s+([\d.]+)/i
+    "Clang++ #{$1}"
   else
     s
   end
@@ -91,13 +85,13 @@ def run_one(image, flags)
     warn "[FAIL] #{image} #{flags}"
     warn stderr.lines.last(10).join
     warn stdout.lines.last(10).join
-    return nil
+    return "bad status #{status.inspect}"
   end
 
   version = stdout[/versionstart\n(.*?)\nversionend/m, 1].to_s.strip
 
   block = stdout[/compilestart\n(.*?)\ncompileend/m, 1]
-  return nil unless block
+  return "no compilestart block" unless block
 
   compile_sec = block[/real\s+(\d+)m([\d.]+)s/, 1].to_f * 60 +
                 block[/real\s+(\d+)m([\d.]+)s/, 2].to_f
@@ -107,14 +101,14 @@ def run_one(image, flags)
   strip_size = stdout[/stripsize_start\n(\d+)\nstripsize_end/m, 1]&.to_i
 
   summary_line = stdout.lines.grep(/^Summary:/).last
-  return nil unless summary_line
+  return "no sumary line" unless summary_line
 
   m = summary_line.match(/Summary:\s*([\d.]+)s,\s*(\d+),\s*(\d+),\s*(\d+)/)
-  return nil unless m
+  return "parse summary" unless m
 
   if m[2].to_i != m[3].to_i && m[2].to_i != 50
     puts "Warning errors: #{[m[2].to_i, m[3].to_i, m[4].to_i].inspect}"
-    return nil
+    return "errors"
   end
 
   {
@@ -143,8 +137,8 @@ end
 envs.each_with_index do |(image, date, flags), index|
   print "[#{index + 1} from #{envs.size}] #{image}: #{flags} ... "
   res = run_one(image, flags)
-  unless res
-    puts "[ERROR]"
+  if res.is_a?(String)
+    puts "[ERROR] (#{res})"
     next
   else
     puts "[OK] (version=#{res[:version]}, compile=#{res[:compile_time].round(2)}s, " \

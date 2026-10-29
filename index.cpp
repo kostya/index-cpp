@@ -3272,7 +3272,7 @@ public:
 
 class Matmul4T : public Matmul1T {
 protected:
-  virtual int get_num_threads() const { return 4; }
+  virtual int get_num_threads() const { return 2; }
 
   std::vector<std::vector<double>>
   matmul_parallel(int n, const std::vector<std::vector<double>> &a,
@@ -3287,7 +3287,7 @@ public:
 
 class Matmul8T : public Matmul4T {
 protected:
-  int get_num_threads() const override { return 8; }
+  int get_num_threads() const override { return 4; }
 
 public:
   Matmul8T() = default;
@@ -3296,7 +3296,7 @@ public:
 
 class Matmul16T : public Matmul4T {
 protected:
-  int get_num_threads() const override { return 16; }
+  int get_num_threads() const override { return 8; }
 
 public:
   Matmul16T() = default;
@@ -4317,8 +4317,8 @@ void BufferHashBenchmark::prepare() {
 
 void BufferHashBenchmark::run(int iteration_id) {
   (void)iteration_id;
-  data[static_cast<size_t>(Helper::next_int(size_val))] =
-      static_cast<uint8_t>(Helper::next_int(256));
+  uint8_t ch = static_cast<uint8_t>(Helper::next_int(256));
+  data[static_cast<size_t>(Helper::next_int(size_val))] = ch;
   result_val += test();
 }
 
@@ -11712,21 +11712,21 @@ int main(int argc, char *argv[]) {
     "  },\n"
     "  {\n"
     "    \"name\": \"Matmul::T4\",\n"
-    "    \"checksum\": 3662487828,\n"
+    "    \"checksum\": 1831243914,\n"
     "    \"n\": 840,\n"
-    "    \"iterations\": 10\n"
+    "    \"iterations\": 5\n"
     "  },\n"
     "  {\n"
     "    \"name\": \"Matmul::T8\",\n"
-    "    \"checksum\": 2969416860,\n"
+    "    \"checksum\": 3632192078,\n"
     "    \"n\": 1045,\n"
-    "    \"iterations\": 10\n"
+    "    \"iterations\": 5\n"
     "  },\n"
     "  {\n"
     "    \"name\": \"Matmul::T16\",\n"
-    "    \"checksum\": 516598680,\n"
+    "    \"checksum\": 2405782988,\n"
     "    \"n\": 1284,\n"
-    "    \"iterations\": 10\n"
+    "    \"iterations\": 5\n"
     "  },\n"
     "  {\n"
     "    \"name\": \"Base64::Encode\",\n"

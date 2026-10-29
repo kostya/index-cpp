@@ -78,6 +78,11 @@ all_keys.each do |key|
     'runs'                 => rows.size,
   }
 
+  if entry['version'].start_with?('Clang') && entry['flags'] == '-O1' && entry['release_date'] <= "2021-05-01"
+    STDERR.puts "SKIP #{entry.inspect}"
+    next
+  end
+
   result << entry
 end
 
